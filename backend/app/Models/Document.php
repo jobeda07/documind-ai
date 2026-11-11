@@ -54,4 +54,12 @@ class Document extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    /**
+     * Chunks extracted and embedded from this document.
+     */
+    public function chunks(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(DocumentChunk::class);
+    }
 }

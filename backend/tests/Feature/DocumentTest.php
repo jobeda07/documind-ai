@@ -169,7 +169,11 @@ class DocumentTest extends TestCase
         ]);
 
         $job = new ProcessDocumentJob($document);
-        $job->handle(new DocumentTextExtractor());
+        $job->handle(
+            new DocumentTextExtractor(),
+            new \App\Services\Document\TextChunker(),
+            new \App\Services\Ai\Mock\MockEmbeddingProvider(384)
+        );
 
         $document->refresh();
 
