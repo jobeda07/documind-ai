@@ -1,0 +1,144 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { authApi } from '../api/auth';
+import type { User, Workspace } from '../api/auth';
+import { workspaceApi } from '../api/workspaces';
+
+interface AuthContextType {
+  user: User | null;
+  token: string | null;
+  workspaces: Workspace[];
+  activeWorkspace: Workspace | null;
+  loading: boolean;
+  setActiveWorkspace: (ws: Workspace) => void;
+  login: (credentials: { email: string; password: string }) => Promise<void>;
+  register: (data: { name: string; email: string; password: string }) => Promise<void>;
+  logout: () => Promise<void>;
+  refreshWorkspaces: () => Promise<void>;
+  quickDemoLogin: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(localStorage.getItem('documind_token'));
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  // Initialize user profile from token
+  useEffect(() => {
+    const initAuth = async () => {
+      const storedToken = localStorage.getItem('documind_token');
+      if (storedToken) {
+        try {
+          const data = await authApi.getMe();
+          setUser(data.user);
+          setWorkspaces(data.workspaces);
+          if (data.workspaces.length > 0) {
+            setActiveWorkspace(data.workspaces[0]);
+          }
+        } catch {
+          localStorage.removeItem('documind_token');
+          setToken(null);
+          setUser(null);
+        }
+      }
+      setLoading(false);
+    };
+
+    initAuth();
+  }, []);
+
+  const login = async (credentials: { email: string; password: string }) => {
+    const res = await authApi.login(credentials);
+    localStorage.setItem('documind_token', res.token);
+    setToken(res.token);
+    setUser(res.user);
+    if (res.workspaces) {
+      setWorkspaces(res.workspaces);
+      if (res.workspaces.length > 0) {
+        setActiveWorkspace(res.workspaces[0]);
+      }
+    }
+  };
+
+  const register = async (data: { name: string; email: string; password: string }) => {
+    const res = await authApi.register(data);
+    localStorage.setItem('documind_token', res.token);
+    setToken(res.token);
+    setUser(res.user);
+    if (res.default_workspace) {
+      setWorkspaces([res.default_workspace]);
+      setActiveWorkspace(res.default_workspace);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await authApi.logout();
+    } catch {
+      // ignore network errors on logout
+    }
+    localStorage.removeItem('documind_token');
+    setToken(null);
+    setUser(null);
+    setWorkspaces([]);
+    setActiveWorkspace(null);
+  };
+
+  const refreshWorkspaces = async () => {
+    if (!token) return;
+    try {
+      const list = await workspaceApi.list();
+      setWorkspaces(list);
+      if (list.length > 0 && (!activeWorkspace || !list.some((w) => w.id === activeWorkspace.id))) {
+        setActiveWorkspace(list[0]);
+      }
+    } catch (e) {
+      console.error('Failed to refresh workspaces', e);
+    }
+  };
+
+  // Quick Demo Login: automatically logs in or registers demo account "John Doe"
+  const quickDemoLogin = async () => {
+    try {
+      await login({ email: 'john@documind.local', password: 'Password123!' });
+    } catch {
+      // If not yet registered, register John Doe
+      await register({
+        name: 'John Doe',
+        email: 'john@documind.local',
+        password: 'Password123!',
+      });
+    }
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        workspaces,
+        activeWorkspace,
+        loading,
+        setActiveWorkspace,
+        login,
+        register,
+        logout,
+        refreshWorkspaces,
+        quickDemoLogin,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};

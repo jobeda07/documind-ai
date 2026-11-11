@@ -20,6 +20,7 @@ Route::prefix('v1')->group(function () {
         });
 
         Route::apiResource('workspaces', WorkspaceController::class);
+        Route::get('workspaces/{workspace}/stats', [WorkspaceController::class, 'stats']);
 
         // Document Management under a workspace
         Route::prefix('workspaces/{workspace}')->group(function () {

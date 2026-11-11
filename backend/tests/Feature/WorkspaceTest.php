@@ -126,4 +126,24 @@ class WorkspaceTest extends TestCase
             'id' => $workspace->id,
         ]);
     }
+
+    public function test_workspace_stats_returns_accurate_counts(): void
+    {
+        $owner = User::factory()->create();
+
+        $workspace = Workspace::create([
+            'name' => 'Stats WS',
+            'slug' => 'stats-ws',
+            'owner_id' => $owner->id,
+        ]);
+        $workspace->users()->attach($owner->id, ['role' => 'owner']);
+
+        $response = $this->actingAs($owner)->getJson("/api/v1/workspaces/{$workspace->id}/stats");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.total_documents', 0)
+            ->assertJsonPath('data.processed_documents', 0)
+            ->assertJsonPath('data.storage_used_mb', 0);
+    }
 }

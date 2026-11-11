@@ -11,6 +11,7 @@ import {
   X,
 } from 'lucide-react';
 import type { NavItemKey } from '../types/dashboard';
+import { useAuth } from '../context/AuthContext';
 
 interface SidebarProps {
   currentTab: NavItemKey;
@@ -25,6 +26,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpenMobile,
   onCloseMobile,
 }) => {
+  const { logout, token } = useAuth();
+
   const navItems: { key: NavItemKey; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { key: 'documents', label: 'Documents', icon: FileText },
@@ -34,6 +37,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { key: 'profile', label: 'Profile', icon: User },
     { key: 'logout', label: 'Logout', icon: LogOut },
   ];
+
+  const handleNavClick = (key: NavItemKey) => {
+    if (key === 'logout') {
+      logout();
+    } else {
+      onTabChange(key);
+    }
+    onCloseMobile();
+  };
 
   return (
     <>
@@ -55,7 +67,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div>
           {/* Header & Logo */}
           <div className="flex items-center justify-between pb-7">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 cursor-pointer" onClick={() => onTabChange('dashboard')}>
               <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 shadow-md shadow-indigo-500/25">
                 <svg
                   className="h-6 w-6 text-white"
@@ -92,16 +104,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Navigation Links */}
           <nav className="space-y-1.5 pt-2">
             {navItems.map((item) => {
+              if (item.key === 'logout' && !token) return null;
               const Icon = item.icon;
               const isActive = currentTab === item.key;
               return (
                 <button
                   key={item.key}
                   type="button"
-                  onClick={() => {
-                    onTabChange(item.key);
-                    onCloseMobile();
-                  }}
+                  onClick={() => handleNavClick(item.key)}
                   className={`group flex w-full items-center gap-3.5 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 ${
                     isActive
                       ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/30'

@@ -102,4 +102,31 @@ class WorkspaceController extends Controller
 
         return $this->success(null, 'Workspace deleted successfully');
     }
+
+    /**
+     * Get real-time statistics for the workspace.
+     */
+    public function stats(Request $request, Workspace $workspace): JsonResponse
+    {
+        Gate::authorize('view', $workspace);
+
+        $totalDocs = $workspace->documents()->count();
+        $processedDocs = $workspace->documents()->where('status', 'completed')->count();
+        $storageBytes = (int) $workspace->documents()->sum('file_size');
+        $storageMb = round($storageBytes / (1024 * 1024), 2);
+
+        $recentDocs = $workspace->documents()
+            ->latest()
+            ->take(5)
+            ->get(['id', 'uuid', 'title', 'original_filename', 'mime_type', 'file_size', 'status', 'created_at']);
+
+        return $this->success([
+            'total_documents' => $totalDocs,
+            'processed_documents' => $processedDocs,
+            'total_chats' => 0,
+            'storage_used_bytes' => $storageBytes,
+            'storage_used_mb' => $storageMb,
+            'recent_documents' => $recentDocs,
+        ], 'Workspace statistics retrieved successfully');
+    }
 }
