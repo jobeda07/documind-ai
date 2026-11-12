@@ -24,14 +24,27 @@ class OllamaEmbeddingProvider implements EmbeddingProviderInterface
 
     public function embed(string $text): array
     {
+        $payload = [
+            'model' => $this->model,
+            'prompt' => $text,
+            'options' => [
+                'num_ctx' => 512,
+            ],
+        ];
+
         $response = Http::timeout($this->timeout)
-            ->post("{$this->baseUrl}/api/embeddings", [
-                'model' => $this->model,
-                'prompt' => $text,
-            ]);
+            ->post("{$this->baseUrl}/api/embeddings", $payload);
 
         if (! $response->successful()) {
             $error = $response->json('error') ?? $response->body();
+
+            // Self-healing fallback: If input length exceeded context length, truncate text and retry
+            if (str_contains($error, 'context length') && mb_strlen($text) > 200) {
+                Log::warning("Embedding context limit reached ({$error}). Truncating to 200 characters and retrying.");
+                $truncated = mb_substr($text, 0, 200);
+                return $this->embed($truncated);
+            }
+
             Log::error("Ollama embeddings failed: {$error}");
             throw new Exception("Ollama embedding generation failed: {$error}");
         }

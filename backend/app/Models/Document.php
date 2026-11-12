@@ -39,6 +39,22 @@ class Document extends Model
         ];
     }
 
+    protected $appends = ['chunks_count'];
+
+    public function getChunksCountAttribute(): int
+    {
+        if (isset($this->attributes['metadata'])) {
+            $meta = is_string($this->attributes['metadata'])
+                ? json_decode($this->attributes['metadata'], true)
+                : $this->attributes['metadata'];
+            if (isset($meta['total_chunks'])) {
+                return (int) $meta['total_chunks'];
+            }
+        }
+
+        return $this->relationLoaded('chunks') ? $this->chunks->count() : $this->chunks()->count();
+    }
+
     /**
      * The workspace this document belongs to.
      */

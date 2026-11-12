@@ -9,11 +9,11 @@ class TextChunker
 
     public function __construct(?int $chunkSize = null, ?int $chunkOverlap = null)
     {
-        $defaultSize = function_exists('config') ? (int) config('ai.chunk_size', 500) : 500;
-        $defaultOverlap = function_exists('config') ? (int) config('ai.chunk_overlap', 100) : 100;
+        $defaultSize = function_exists('config') ? (int) config('ai.chunk_size', 350) : 350;
+        $defaultOverlap = function_exists('config') ? (int) config('ai.chunk_overlap', 60) : 60;
 
-        $this->chunkSize = $chunkSize ?? ($defaultSize ?: 500);
-        $this->chunkOverlap = $chunkOverlap ?? ($defaultOverlap ?: 100);
+        $this->chunkSize = $chunkSize ?? ($defaultSize ?: 350);
+        $this->chunkOverlap = $chunkOverlap ?? ($defaultOverlap ?: 60);
 
         if ($this->chunkOverlap >= $this->chunkSize) {
             $this->chunkOverlap = (int) floor($this->chunkSize / 2);
@@ -97,21 +97,29 @@ class TextChunker
             // If not at the end of the text, try to break on a sentence or paragraph boundary
             if ($end < $textLength) {
                 $boundary = $this->findNaturalBoundary($text, $start, $end);
-                if ($boundary !== false) {
+                if ($boundary !== false && $boundary > $start + $this->chunkOverlap) {
                     $end = $boundary;
                 }
             }
 
             $chunkText = mb_substr($text, $start, $end - $start);
+            $trimmed = trim($chunkText);
 
-            $chunks[] = [
-                'text' => $chunkText,
-                'start' => $start,
-                'end' => $end,
-            ];
+            if ($trimmed !== '') {
+                $chunks[] = [
+                    'text' => $chunkText,
+                    'start' => $start,
+                    'end' => $end,
+                ];
+            }
 
-            // Next window begins by stepping forward by (chunkLength - overlap)
-            $step = max(1, ($end - $start) - $this->chunkOverlap);
+            // If this window reached or exceeded the end of the text, stop chunking
+            if ($end >= $textLength) {
+                break;
+            }
+
+            // Next window begins by stepping forward
+            $step = max(20, ($end - $start) - $this->chunkOverlap);
             $start += $step;
         }
 
@@ -124,40 +132,41 @@ class TextChunker
     protected function findNaturalBoundary(string $text, int $start, int $end): int|false
     {
         $slice = mb_substr($text, $start, $end - $start);
+        $sliceLen = mb_strlen($slice);
 
-        // Look for double newline (paragraph break) in the last 30% of the slice
-        $minPos = (int) floor(($end - $start) * 0.7);
+        // Look for boundaries in the last 35% of the slice
+        $minPos = (int) floor($sliceLen * 0.65);
 
-        $doubleNl = mb_strrpos($slice, "\n\n");
-        if ($doubleNl !== false && $doubleNl >= $minPos) {
-            return $start + $doubleNl + 2;
-        }
+        // Natural delimiter priority: paragraph break, Bengali dari, Latin punctuation, newline, space
+        $delimiters = [
+            "\n\n",
+            "।\n",
+            "। ",
+            ".\n",
+            ". ",
+            "!\n",
+            "! ",
+            "?\n",
+            "? ",
+            "\n",
+            " ",
+        ];
 
-        // Look for sentence terminators (. ! ?) followed by space
-        if (preg_match('/[.!?]\s+[A-Z0-9]/u', $slice, $match, PREG_OFFSET_CAPTURE, $minPos)) {
-            return $start + $match[0][1] + 1;
-        }
-
-        // Look for single newline
-        $singleNl = mb_strrpos($slice, "\n");
-        if ($singleNl !== false && $singleNl >= $minPos) {
-            return $start + $singleNl + 1;
-        }
-
-        // Look for space
-        $lastSpace = mb_strrpos($slice, ' ');
-        if ($lastSpace !== false && $lastSpace >= $minPos) {
-            return $start + $lastSpace + 1;
+        foreach ($delimiters as $delim) {
+            $pos = mb_strrpos($slice, $delim);
+            if ($pos !== false && $pos >= $minPos) {
+                return $start + $pos + mb_strlen($delim);
+            }
         }
 
         return false;
     }
 
     /**
-     * Approximate token count (roughly ~4 characters per token in English).
+     * Approximate token count (roughly ~4 characters per token in English, higher for multi-byte).
      */
-    protected function estimateTokens(string $text): int
+    public function estimateTokens(string $text): int
     {
-        return (int) ceil(mb_strlen($text) / 4);
+        return (int) ceil(mb_strlen($text) / 3.5);
     }
 }

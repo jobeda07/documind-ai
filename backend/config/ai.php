@@ -27,8 +27,8 @@ return [
     | Chunking Configuration
     |--------------------------------------------------------------------------
     */
-    'chunk_size' => (int) env('AI_CHUNK_SIZE', 500),
-    'chunk_overlap' => (int) env('AI_CHUNK_OVERLAP', 100),
+    'chunk_size' => (int) env('AI_CHUNK_SIZE', 350),
+    'chunk_overlap' => (int) env('AI_CHUNK_OVERLAP', 60),
 
     /*
     |--------------------------------------------------------------------------
