@@ -14,16 +14,22 @@ import './App.css';
 const validTabs: NavItemKey[] = ['dashboard', 'documents', 'chat', 'workspaces', 'settings', 'profile'];
 
 const getInitialTab = (): NavItemKey => {
-  // 1. Read from URL Hash (e.g. #/chat, #/documents)
-  if (typeof window !== 'undefined' && window.location.hash) {
-    const raw = window.location.hash.replace(/^#\/?/, '').toLowerCase() as NavItemKey;
-    if (validTabs.includes(raw)) {
-      return raw;
-    }
-  }
-
-  // 2. Fallback to localStorage
   if (typeof window !== 'undefined') {
+    // 1. Check pathname (e.g. /chat, /documents)
+    const path = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase() as NavItemKey;
+    if (validTabs.includes(path)) {
+      return path;
+    }
+
+    // Also handle legacy hash if present (e.g. #/chat -> chat)
+    if (window.location.hash) {
+      const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase() as NavItemKey;
+      if (validTabs.includes(hash)) {
+        return hash;
+      }
+    }
+
+    // 2. Fallback to localStorage
     const saved = localStorage.getItem('documind_active_tab') as NavItemKey;
     if (validTabs.includes(saved)) {
       return saved;
@@ -42,29 +48,33 @@ function MainApp() {
   const setCurrentTab = useCallback((tab: NavItemKey) => {
     setCurrentTabState(tab);
     localStorage.setItem('documind_active_tab', tab);
-    if (window.location.hash !== `#/${tab}`) {
-      window.location.hash = `/${tab}`;
+    const targetPath = `/${tab}`;
+    if (window.location.pathname !== targetPath || window.location.hash) {
+      window.history.pushState(null, '', targetPath);
     }
   }, []);
 
-  // Listen to browser Back/Forward or manual URL hash changes
+  // Listen to browser Back/Forward (popstate)
   useEffect(() => {
-    const onHashChange = () => {
-      const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase() as NavItemKey;
-      if (validTabs.includes(hash)) {
-        setCurrentTabState(hash);
-        localStorage.setItem('documind_active_tab', hash);
+    const onPopState = () => {
+      const path = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase() as NavItemKey;
+      if (validTabs.includes(path)) {
+        setCurrentTabState(path);
+        localStorage.setItem('documind_active_tab', path);
+      } else {
+        setCurrentTabState('dashboard');
       }
     };
 
-    window.addEventListener('hashchange', onHashChange);
+    window.addEventListener('popstate', onPopState);
 
-    // Ensure the URL hash reflects the initial tab
-    if (!window.location.hash || window.location.hash === '#' || window.location.hash === '#/') {
-      window.location.hash = `/${currentTab}`;
+    // Clean up any remaining /# or empty path and standardize to /tab
+    const currentPath = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
+    if (!validTabs.includes(currentPath as NavItemKey) || window.location.hash) {
+      window.history.replaceState(null, '', `/${currentTab}`);
     }
 
-    return () => window.removeEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('popstate', onPopState);
   }, [currentTab]);
 
   return (
