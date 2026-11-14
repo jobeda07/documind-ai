@@ -11,6 +11,8 @@ import {
   CheckCircle,
   Loader2,
   FileCheck,
+  Layers,
+  X,
 } from 'lucide-react';
 
 export const DocumentsView: React.FC = () => {
@@ -22,6 +24,43 @@ export const DocumentsView: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+
+  // Chunks inspection modal state
+  const [chunksModalOpen, setChunksModalOpen] = useState(false);
+  const [loadingChunks, setLoadingChunks] = useState(false);
+  const [chunksPayload, setChunksPayload] = useState<{
+    document: {
+      id: number;
+      title: string;
+      original_filename: string;
+      status: string;
+      total_chunks: number;
+      page_count: number;
+    };
+    chunks: Array<{
+      id: number;
+      chunk_index: number;
+      page_number: number;
+      content: string;
+      token_count: number;
+      metadata: Record<string, unknown>;
+      created_at: string;
+    }>;
+  } | null>(null);
+
+  const handleOpenChunks = async (docId: number) => {
+    if (!activeWorkspace) return;
+    try {
+      setChunksModalOpen(true);
+      setLoadingChunks(true);
+      const data = await documentApi.getChunks(activeWorkspace.id, docId);
+      setChunksPayload(data);
+    } catch (e) {
+      console.error('Failed to load chunks', e);
+    } finally {
+      setLoadingChunks(false);
+    }
+  };
 
   // File upload form state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -323,6 +362,14 @@ export const DocumentsView: React.FC = () => {
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"
+                            onClick={() => handleOpenChunks(doc.id)}
+                            title="Inspect vector chunks"
+                            className="rounded-lg p-1.5 text-slate-400 hover:bg-purple-50 hover:text-purple-600 transition"
+                          >
+                            <Layers className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => handleReprocess(doc.id)}
                             title="Re-run text extraction"
                             className="rounded-lg p-1.5 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600"
@@ -347,6 +394,81 @@ export const DocumentsView: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Chunks Inspection Modal */}
+      {chunksModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs">
+          <div className="relative flex max-h-[85vh] w-full max-w-3xl flex-col rounded-3xl border border-indigo-100 bg-white shadow-2xl">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 p-5">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-100 text-purple-700">
+                  <Layers className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    {chunksPayload?.document.title || 'Document Vector Chunks'}
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    {chunksPayload?.document.original_filename} • {chunksPayload?.document.total_chunks} Total Chunks • pgvector 384d
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setChunksModalOpen(false)}
+                className="rounded-xl p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-3">
+              {loadingChunks ? (
+                <div className="flex items-center justify-center py-16 text-slate-400">
+                  <Loader2 className="h-6 w-6 animate-spin text-purple-600 mr-2" />
+                  <span>Loading chunks from pgvector...</span>
+                </div>
+              ) : !chunksPayload || chunksPayload.chunks.length === 0 ? (
+                <div className="py-12 text-center text-xs text-slate-400">
+                  No chunks generated yet for this document. It may still be processing.
+                </div>
+              ) : (
+                chunksPayload.chunks.map((chk) => (
+                  <div
+                    key={chk.id}
+                    className="rounded-2xl border border-slate-100 bg-[#f9fafc] p-4 text-xs space-y-2"
+                  >
+                    <div className="flex items-center justify-between text-[11px] font-bold text-slate-600">
+                      <span className="rounded-md bg-purple-100 px-2 py-0.5 text-purple-800">
+                        Chunk #{chk.chunk_index + 1}
+                      </span>
+                      <span>Page {chk.page_number}</span>
+                      <span>~{chk.token_count} Tokens</span>
+                    </div>
+                    <p className="whitespace-pre-wrap font-sans text-slate-700 leading-relaxed bg-white p-3 rounded-xl border border-slate-200/60 shadow-2xs">
+                      {chk.content}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/60 px-5 py-3 text-xs text-slate-500 rounded-b-3xl">
+              <span>Indexed with HNSW Cosine Similarity for RAG</span>
+              <button
+                type="button"
+                onClick={() => setChunksModalOpen(false)}
+                className="rounded-xl bg-slate-200 px-4 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-300"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Bell, ChevronDown, Menu, LogIn, LogOut, Check, Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { SearchModal } from './SearchModal';
 
 interface TopNavbarProps {
   onOpenMobileMenu: () => void;
@@ -12,6 +13,18 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onOpenMobileMenu, onOpenAu
   const { user, token, logout, workspaces, activeWorkspace, setActiveWorkspace } = useAuth();
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showWorkspaceDropdown, setShowWorkspaceDropdown] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSearchModalOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const getInitials = (name: string) => {
     return name
@@ -38,14 +51,18 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onOpenMobileMenu, onOpenAu
 
       {/* Center Search Bar */}
       <div className="mx-2 max-w-xl flex-1 sm:mx-4">
-        <div className="relative">
+        <div
+          onClick={() => setIsSearchModalOpen(true)}
+          className="relative cursor-pointer"
+        >
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
             <Search className="h-4.5 w-4.5 text-slate-400" />
           </div>
           <input
             type="text"
+            readOnly
             placeholder="Search documents, ask questions... (Ctrl + K)"
-            className="w-full rounded-2xl border border-indigo-100/80 bg-[#f4f5fd] py-2.5 pr-4 pl-11 text-xs font-medium text-slate-800 placeholder-slate-400 transition focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-3 focus:ring-indigo-100 sm:text-sm"
+            className="w-full cursor-pointer rounded-2xl border border-indigo-100/80 bg-[#f4f5fd] py-2.5 pr-4 pl-11 text-xs font-medium text-slate-800 placeholder-slate-400 transition hover:bg-white hover:border-indigo-300 focus:outline-none sm:text-sm"
           />
         </div>
       </div>
@@ -176,6 +193,13 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onOpenMobileMenu, onOpenAu
           </button>
         )}
       </div>
+
+      {/* Global Semantic Search Modal */}
+      <SearchModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+        onNavigate={onNavigate}
+      />
     </header>
   );
 };

@@ -150,6 +150,31 @@ class DocumentController extends Controller
     }
 
     /**
+     * Get all chunks of a document.
+     */
+    public function chunks(Request $request, Workspace $workspace, Document $document): JsonResponse
+    {
+        $this->ensureDocumentBelongsToWorkspace($document, $workspace);
+        Gate::authorize('view', $document);
+
+        $chunks = $document->chunks()
+            ->orderBy('chunk_index', 'asc')
+            ->get(['id', 'chunk_index', 'page_number', 'content', 'token_count', 'metadata', 'created_at']);
+
+        return $this->success([
+            'document' => [
+                'id' => $document->id,
+                'title' => $document->title,
+                'original_filename' => $document->original_filename,
+                'status' => $document->status,
+                'total_chunks' => $chunks->count(),
+                'page_count' => $document->page_count,
+            ],
+            'chunks' => $chunks,
+        ], 'Document chunks retrieved successfully');
+    }
+
+    /**
      * Ensure the document belongs to the specified workspace.
      */
     protected function ensureDocumentBelongsToWorkspace(Document $document, Workspace $workspace): void

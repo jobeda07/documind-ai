@@ -69,4 +69,30 @@ export const documentApi = {
   delete: async (workspaceId: number, documentId: number) => {
     await apiClient.delete(`/workspaces/${workspaceId}/documents/${documentId}`);
   },
+
+  getChunks: async (workspaceId: number, documentId: number) => {
+    const res = await apiClient.get<{
+      success: boolean;
+      data: {
+        document: {
+          id: number;
+          title: string;
+          original_filename: string;
+          status: string;
+          total_chunks: number;
+          page_count: number;
+        };
+        chunks: Array<{
+          id: number;
+          chunk_index: number;
+          page_number: number;
+          content: string;
+          token_count: number;
+          metadata: Record<string, unknown>;
+          created_at: string;
+        }>;
+      };
+    }>(`/workspaces/${workspaceId}/documents/${documentId}/chunks`);
+    return res.data.data;
+  },
 };

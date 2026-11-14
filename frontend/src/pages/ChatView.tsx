@@ -15,6 +15,7 @@ import {
   Sparkles,
   Trash2,
   AlertCircle,
+  Download,
 } from 'lucide-react';
 
 export const ChatView: React.FC = () => {
@@ -182,6 +183,28 @@ export const ChatView: React.FC = () => {
     }));
   };
 
+  const handleExport = (format: 'markdown' | 'json') => {
+    if (!activeWorkspace || !activeConversation) return;
+    const token = localStorage.getItem('documind_token');
+    fetch(`/api/v1/workspaces/${activeWorkspace.id}/conversations/${activeConversation.id}/export?format=${format}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => res.blob())
+      .then((blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `chat-${activeConversation.id}.${format === 'json' ? 'json' : 'md'}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      })
+      .catch((err) => console.error('Export failed', err));
+  };
+
   const starterQuestions = [
     'What are the core modules and solutions covered in the uploaded documents?',
     'Explain the NBR VAT compliance features and reporting requirements.',
@@ -277,6 +300,19 @@ export const ChatView: React.FC = () => {
               </span>
             </div>
           </div>
+
+          {activeConversation && messages.length > 0 && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleExport('markdown')}
+                className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:border-slate-300"
+              >
+                <Download className="h-3.5 w-3.5 text-indigo-600" />
+                <span>Export (.md)</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Message Thread */}

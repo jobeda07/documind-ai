@@ -138,6 +138,60 @@ class ChatController extends Controller
     }
 
     /**
+     * Export conversation transcript as Markdown or JSON.
+     */
+    public function export(Request $request, Workspace $workspace, Conversation $conversation): JsonResponse|\Illuminate\Http\Response
+    {
+        Gate::authorize('view', $workspace);
+
+        if ($conversation->workspace_id !== $workspace->id) {
+            return $this->error('Conversation not found in this workspace', 404);
+        }
+
+        $conversation->load('messages');
+        $format = $request->query('format', 'markdown');
+
+        if ($format === 'json') {
+            return response()->json([
+                'conversation' => [
+                    'id' => $conversation->id,
+                    'title' => $conversation->title,
+                    'workspace' => $workspace->name,
+                    'created_at' => $conversation->created_at->toIso8601String(),
+                ],
+                'messages' => $conversation->messages,
+            ], 200, [
+                'Content-Disposition' => "attachment; filename=\"chat-{$conversation->id}.json\"",
+            ]);
+        }
+
+        // Markdown format
+        $md = "# Chat: {$conversation->title}\n";
+        $md .= "**Workspace:** {$workspace->name}  \n";
+        $md .= "**Date:** {$conversation->created_at->toFormattedDateString()}  \n\n---\n\n";
+
+        foreach ($conversation->messages as $msg) {
+            $sender = $msg->role === 'user' ? 'User' : 'DocuMind AI';
+            $md .= "### {$sender} ({$msg->created_at->format('H:i')})\n\n";
+            $md .= "{$msg->content}\n\n";
+
+            if (! empty($msg->citations)) {
+                $md .= "#### Source Citations:\n";
+                foreach ($msg->citations as $cit) {
+                    $md .= "- **{$cit['label']}**: *{$cit['filename']}* (Page {$cit['page_number']}) - {$cit['content_snippet']}\n";
+                }
+                $md .= "\n";
+            }
+            $md .= "---\n\n";
+        }
+
+        return response($md, 200, [
+            'Content-Type' => 'text/markdown; charset=utf-8',
+            'Content-Disposition' => "attachment; filename=\"chat-{$conversation->id}.md\"",
+        ]);
+    }
+
+    /**
      * Delete a conversation.
      */
     public function destroy(Request $request, Workspace $workspace, Conversation $conversation): JsonResponse
