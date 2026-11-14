@@ -11,7 +11,7 @@ interface AuthContextType {
   loading: boolean;
   setActiveWorkspace: (ws: Workspace) => void;
   login: (credentials: { email: string; password: string }) => Promise<void>;
-  register: (data: { name: string; email: string; password: string }) => Promise<void>;
+  register: (data: { name: string; email: string; password: string }) => Promise<{ requires_approval: boolean; message: string }>;
   logout: () => Promise<void>;
   refreshWorkspaces: () => Promise<void>;
   quickDemoLogin: () => Promise<void>;
@@ -52,8 +52,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (credentials: { email: string; password: string }) => {
     const res = await authApi.login(credentials);
-    localStorage.setItem('documind_token', res.token);
-    setToken(res.token);
+    if (res.token) {
+      localStorage.setItem('documind_token', res.token);
+      setToken(res.token);
+    }
     setUser(res.user);
     if (res.workspaces) {
       setWorkspaces(res.workspaces);
@@ -65,13 +67,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (data: { name: string; email: string; password: string }) => {
     const res = await authApi.register(data);
-    localStorage.setItem('documind_token', res.token);
-    setToken(res.token);
-    setUser(res.user);
-    if (res.default_workspace) {
-      setWorkspaces([res.default_workspace]);
-      setActiveWorkspace(res.default_workspace);
+    if (res.data.token) {
+      localStorage.setItem('documind_token', res.data.token);
+      setToken(res.data.token);
+      setUser(res.data.user);
+      if (res.data.default_workspace) {
+        setWorkspaces([res.data.default_workspace]);
+        setActiveWorkspace(res.data.default_workspace);
+      }
     }
+    return {
+      requires_approval: !!res.data.requires_approval,
+      message: res.message,
+    };
   };
 
   const logout = async () => {

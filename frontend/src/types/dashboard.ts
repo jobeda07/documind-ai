@@ -31,6 +31,7 @@ export type NavItemKey =
   | 'documents'
   | 'chat'
   | 'workspaces'
+  | 'users'
   | 'settings'
   | 'profile'
   | 'logout';

@@ -18,7 +18,7 @@ class AuthController extends Controller
     use ApiResponse;
 
     /**
-     * Register a new user and generate a default workspace.
+     * Register a new user. First user becomes active admin; subsequent users require admin approval.
      */
     public function register(Request $request): JsonResponse
     {
@@ -29,10 +29,16 @@ class AuthController extends Controller
         ]);
 
         return DB::transaction(function () use ($validated) {
+            $isFirstUser = User::count() === 0;
+            $role = $isFirstUser ? 'admin' : 'user';
+            $status = $isFirstUser ? 'active' : 'pending';
+
             $user = User::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
+                'role' => $role,
+                'status' => $status,
             ]);
 
             // Create default personal workspace
@@ -53,6 +59,21 @@ class AuthController extends Controller
 
             $workspace->users()->attach($user->id, ['role' => 'owner']);
 
+            // If account requires admin approval, do not issue an auth token
+            if ($status === 'pending') {
+                return $this->success([
+                    'user' => [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'role' => $user->role,
+                        'status' => $user->status,
+                    ],
+                    'requires_approval' => true,
+                ], 'Registration successful! Your account is pending administrator approval before you can log in.', 201);
+            }
+
+            // First user is immediately active
             $token = $user->createToken('documind_auth')->plainTextToken;
 
             return $this->success([
@@ -60,15 +81,18 @@ class AuthController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
+                    'role' => $user->role,
+                    'status' => $user->status,
                 ],
                 'token' => $token,
                 'default_workspace' => $workspace,
+                'requires_approval' => false,
             ], 'User registered successfully', 201);
         });
     }
 
     /**
-     * Authenticate user and issue Sanctum token.
+     * Authenticate user and issue Sanctum token. Rejects pending or deactivated accounts.
      */
     public function login(Request $request): JsonResponse
     {
@@ -83,6 +107,16 @@ class AuthController extends Controller
             return $this->error('Invalid credentials provided', 401);
         }
 
+        // Check if account is pending approval
+        if ($user->isPending()) {
+            return $this->error('Your account is pending administrator approval. Please contact an admin to activate your account.', 403);
+        }
+
+        // Check if account has been deactivated
+        if ($user->isDeactivated()) {
+            return $this->error('Your account has been deactivated by an administrator. Access is disabled.', 403);
+        }
+
         $token = $user->createToken('documind_auth')->plainTextToken;
 
         $workspaces = $user->workspaces()->get();
@@ -92,6 +126,8 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'role' => $user->role,
+                'status' => $user->status,
             ],
             'token' => $token,
             'workspaces' => $workspaces,
@@ -99,7 +135,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Invalidate current user token.
+     * Terminate the active Sanctum token.
      */
     public function logout(Request $request): JsonResponse
     {
@@ -109,20 +145,21 @@ class AuthController extends Controller
     }
 
     /**
-     * Get authenticated user profile with workspaces.
+     * Return authenticated user profile and workspaces.
      */
     public function me(Request $request): JsonResponse
     {
         $user = $request->user();
-        $workspaces = $user->workspaces()->get();
 
         return $this->success([
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'role' => $user->role,
+                'status' => $user->status,
             ],
-            'workspaces' => $workspaces,
+            'workspaces' => $user->workspaces()->get(),
         ], 'Profile retrieved successfully');
     }
 }

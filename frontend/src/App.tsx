@@ -7,11 +7,13 @@ import { DashboardView } from './pages/DashboardView';
 import { DocumentsView } from './pages/DocumentsView';
 import { WorkspacesView } from './pages/WorkspacesView';
 import { ChatView } from './pages/ChatView';
+import { LoginView } from './pages/LoginView';
+import { AdminUsersView } from './pages/AdminUsersView';
 import type { NavItemKey } from './types/dashboard';
-import { Database, Cpu, ShieldCheck } from 'lucide-react';
+import { Database, Cpu, ShieldCheck, Loader2 } from 'lucide-react';
 import './App.css';
 
-const validTabs: NavItemKey[] = ['dashboard', 'documents', 'chat', 'workspaces', 'settings', 'profile'];
+const validTabs: NavItemKey[] = ['dashboard', 'documents', 'chat', 'workspaces', 'users', 'settings', 'profile'];
 
 const getInitialTab = (): NavItemKey => {
   if (typeof window !== 'undefined') {
@@ -40,7 +42,7 @@ const getInitialTab = (): NavItemKey => {
 };
 
 function MainApp() {
-  const { user, token, activeWorkspace } = useAuth();
+  const { user, token, loading: authLoading, activeWorkspace } = useAuth();
   const [currentTab, setCurrentTabState] = useState<NavItemKey>(getInitialTab);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -77,6 +79,21 @@ function MainApp() {
     return () => window.removeEventListener('popstate', onPopState);
   }, [currentTab]);
 
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#0b0f24]">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-10 w-10 animate-spin text-indigo-500" />
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Loading DocuMind AI...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!token || !user) {
+    return <LoginView />;
+  }
+
   return (
     <div className="flex min-h-screen bg-[#f4f6fd] text-slate-800">
       {/* Sidebar Navigation */}
@@ -102,8 +119,8 @@ function MainApp() {
             {currentTab === 'dashboard' && <DashboardView onNavigate={setCurrentTab} />}
             {currentTab === 'documents' && <DocumentsView />}
             {currentTab === 'workspaces' && <WorkspacesView />}
-
             {currentTab === 'chat' && <ChatView />}
+            {currentTab === 'users' && <AdminUsersView />}
 
             {/* Settings Tab */}
             {currentTab === 'settings' && (

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\AdminUserController;
 use App\Http\Controllers\Api\V1\AnalyticsController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\ChatController;
@@ -15,11 +16,18 @@ Route::prefix('v1')->group(function () {
         Route::post('login', [AuthController::class, 'login']);
     });
 
-    // Authenticated protected routes
-    Route::middleware('auth:sanctum')->group(function () {
+    // Authenticated protected routes (Active users only)
+    Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
         Route::prefix('auth')->group(function () {
             Route::post('logout', [AuthController::class, 'logout']);
             Route::get('me', [AuthController::class, 'me']);
+        });
+
+        // Administrator User Management
+        Route::middleware('user.admin')->prefix('admin')->group(function () {
+            Route::get('users', [AdminUserController::class, 'index']);
+            Route::patch('users/{user}/status', [AdminUserController::class, 'updateStatus']);
+            Route::patch('users/{user}/role', [AdminUserController::class, 'updateRole']);
         });
 
         Route::apiResource('workspaces', WorkspaceController::class);
