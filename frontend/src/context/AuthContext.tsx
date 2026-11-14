@@ -108,18 +108,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Quick Demo Login: automatically logs in or registers demo account "John Doe"
+  // Quick Demo Login: automatically logs in with the seeded administrator account
   const quickDemoLogin = async () => {
-    try {
-      await login({ email: 'john@documind.local', password: 'Password123!' });
-    } catch {
-      // If not yet registered, register John Doe
-      await register({
-        name: 'John Doe',
-        email: 'john@documind.local',
-        password: 'Password123!',
-      });
-    }
+    await login({ email: 'admin@documind.com', password: 'secret' });
   };
 
   return (

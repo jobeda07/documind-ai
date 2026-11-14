@@ -255,7 +255,7 @@ export const LoginView: React.FC = () => {
 
         {/* Demo Fast Login Button */}
         <div className="mt-6 border-t border-slate-800 pt-5 text-center">
-          <p className="text-[11px] text-slate-400 mb-2">Want to test with the active administrator account?</p>
+          <p className="text-[11px] text-slate-400 mb-2">Login with the default administrator credentials:</p>
           <button
             type="button"
             onClick={handleDemoLogin}
@@ -263,7 +263,7 @@ export const LoginView: React.FC = () => {
             className="w-full flex items-center justify-center gap-2 rounded-xl border border-indigo-700/60 bg-indigo-950/40 py-2.5 text-xs font-bold text-indigo-300 hover:bg-indigo-900/40 hover:text-white transition"
           >
             <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
-            <span>One-Click Admin Login (John Doe)</span>
+            <span>One-Click Admin Login (admin@documind.com / secret)</span>
           </button>
         </div>
       </div>
