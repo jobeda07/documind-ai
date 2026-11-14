@@ -248,10 +248,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       {/* 4. Bottom Section: Quick Actions & AI Assistant */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="lg:col-span-6">
-          <QuickActions />
+          <QuickActions onNavigate={onNavigate} />
         </div>
         <div className="lg:col-span-6">
-          <AiAssistantPanel />
+          <AiAssistantPanel onNavigate={onNavigate} />
         </div>
       </div>
     </div>

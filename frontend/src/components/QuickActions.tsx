@@ -1,10 +1,15 @@
 import React from 'react';
 import { Zap, UploadCloud, MessageSquare, Search, LayoutGrid } from 'lucide-react';
+import type { NavItemKey } from '../types/dashboard';
 
-export const QuickActions: React.FC = () => {
+interface QuickActionsProps {
+  onNavigate?: (tab: NavItemKey) => void;
+}
+
+export const QuickActions: React.FC<QuickActionsProps> = ({ onNavigate }) => {
   const actions = [
     {
-      id: 'upload',
+      id: 'documents' as NavItemKey,
       title: 'Upload Document',
       icon: UploadCloud,
       cardBg: 'bg-[#ede9fe] hover:bg-[#e4ddfd]',
@@ -12,7 +17,7 @@ export const QuickActions: React.FC = () => {
       textColor: 'text-purple-900',
     },
     {
-      id: 'chat',
+      id: 'chat' as NavItemKey,
       title: 'Start Chat',
       icon: MessageSquare,
       cardBg: 'bg-[#e0f2fe] hover:bg-[#d0ecfd]',
@@ -20,7 +25,7 @@ export const QuickActions: React.FC = () => {
       textColor: 'text-blue-900',
     },
     {
-      id: 'search',
+      id: 'documents' as NavItemKey,
       title: 'Search Documents',
       icon: Search,
       cardBg: 'bg-[#dcfce7] hover:bg-[#cbf7da]',
@@ -28,7 +33,7 @@ export const QuickActions: React.FC = () => {
       textColor: 'text-emerald-900',
     },
     {
-      id: 'workspaces',
+      id: 'workspaces' as NavItemKey,
       title: 'Manage Workspaces',
       icon: LayoutGrid,
       cardBg: 'bg-[#ffedd5] hover:bg-[#fedec2]',
@@ -49,13 +54,14 @@ export const QuickActions: React.FC = () => {
 
       {/* Grid of 4 Action Tiles */}
       <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {actions.map((act) => {
+        {actions.map((act, index) => {
           const Icon = act.icon;
           return (
             <button
-              key={act.id}
+              key={`${act.id}-${index}`}
               type="button"
-              className={`flex flex-col items-center justify-center gap-2.5 rounded-2xl p-4 text-center transition-all duration-200 active:scale-97 ${act.cardBg}`}
+              onClick={() => onNavigate && onNavigate(act.id)}
+              className={`flex flex-col items-center justify-center gap-2.5 rounded-2xl p-4 text-center transition-all duration-200 active:scale-97 cursor-pointer ${act.cardBg}`}
             >
               <div
                 className={`flex h-11 w-11 items-center justify-center rounded-xl shadow-xs ${act.iconBg}`}

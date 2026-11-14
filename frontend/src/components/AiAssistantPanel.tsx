@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import { Bot, Send } from 'lucide-react';
+import type { NavItemKey } from '../types/dashboard';
 
-export const AiAssistantPanel: React.FC = () => {
+interface AiAssistantPanelProps {
+  onNavigate?: (tab: NavItemKey) => void;
+}
+
+export const AiAssistantPanel: React.FC<AiAssistantPanelProps> = ({ onNavigate }) => {
   const [query, setQuery] = useState('');
 
   const suggestions = [
@@ -12,19 +17,35 @@ export const AiAssistantPanel: React.FC = () => {
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!query.trim()) return;
-    // UI demo behavior
-    setQuery('');
+    if (onNavigate) {
+      onNavigate('chat');
+    }
+  };
+
+  const handleChipClick = (suggestion: string) => {
+    setQuery(suggestion);
+    if (onNavigate) {
+      onNavigate('chat');
+    }
   };
 
   return (
     <div className="flex h-full flex-col justify-between rounded-2xl border border-indigo-50/80 bg-white p-5 shadow-xs">
       {/* Header */}
-      <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-          <Bot className="h-4 w-4" />
+      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+            <Bot className="h-4 w-4" />
+          </div>
+          <h3 className="text-base font-bold text-slate-900">AI Assistant</h3>
         </div>
-        <h3 className="text-base font-bold text-slate-900">AI Assistant</h3>
+        <button
+          type="button"
+          onClick={() => onNavigate && onNavigate('chat')}
+          className="text-xs font-bold text-indigo-600 hover:text-indigo-800"
+        >
+          Open Chat &rarr;
+        </button>
       </div>
 
       {/* Input Box */}
@@ -50,7 +71,7 @@ export const AiAssistantPanel: React.FC = () => {
           <button
             key={suggestion}
             type="button"
-            onClick={() => setQuery(suggestion)}
+            onClick={() => handleChipClick(suggestion)}
             className="rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
           >
             {suggestion}
