@@ -76,12 +76,12 @@ class DocumentChunk extends Model
         $vectorString = static::formatVector($queryVector);
 
         // In pgvector, cosine distance is <=> operator. Cosine similarity = 1 - cosine_distance
-        $query->selectRaw("*, (1 - (embedding <=> '{$vectorString}'::vector)) AS similarity")
-            ->orderByRaw("embedding <=> '{$vectorString}'::vector ASC");
+        $query->selectRaw("*, (1 - (embedding <=> ?::vector)) AS similarity", [$vectorString])
+            ->orderByRaw("embedding <=> ?::vector ASC", [$vectorString]);
 
         if ($minSimilarity !== null) {
             $maxDistance = 1 - $minSimilarity;
-            $query->whereRaw("embedding <=> '{$vectorString}'::vector <= ?", [$maxDistance]);
+            $query->whereRaw("embedding <=> ?::vector <= ?", [$vectorString, $maxDistance]);
         }
 
         return $query->limit($limit);

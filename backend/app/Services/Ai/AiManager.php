@@ -5,6 +5,7 @@ namespace App\Services\Ai;
 use App\Services\Ai\Contracts\EmbeddingProviderInterface;
 use App\Services\Ai\Contracts\LlmProviderInterface;
 use App\Services\Ai\Mock\MockEmbeddingProvider;
+use App\Services\Ai\Mock\MockLlmProvider;
 use App\Services\Ai\Ollama\OllamaEmbeddingProvider;
 use App\Services\Ai\Ollama\OllamaLlmProvider;
 use InvalidArgumentException;
@@ -34,6 +35,7 @@ class AiManager
 
         return match ($driver) {
             'ollama' => new OllamaLlmProvider(),
+            'mock' => new MockLlmProvider(),
             default => throw new InvalidArgumentException("Unsupported LLM provider [{$driver}]"),
         };
     }
