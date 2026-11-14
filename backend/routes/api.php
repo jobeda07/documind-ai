@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\ChatController;
 use App\Http\Controllers\Api\V1\DocumentController;
 use App\Http\Controllers\Api\V1\WorkspaceController;
 use Illuminate\Support\Facades\Route;
@@ -29,6 +30,13 @@ Route::prefix('v1')->group(function () {
             Route::get('documents/{document}', [DocumentController::class, 'show']);
             Route::post('documents/{document}/reprocess', [DocumentController::class, 'reprocess']);
             Route::delete('documents/{document}', [DocumentController::class, 'destroy']);
+
+            // Chat conversations & RAG messaging
+            Route::get('conversations', [ChatController::class, 'index']);
+            Route::post('conversations', [ChatController::class, 'store']);
+            Route::get('conversations/{conversation}', [ChatController::class, 'show']);
+            Route::post('conversations/{conversation}/messages', [ChatController::class, 'sendMessage']);
+            Route::delete('conversations/{conversation}', [ChatController::class, 'destroy']);
         });
     });
 });

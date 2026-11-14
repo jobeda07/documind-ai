@@ -49,4 +49,12 @@ class User extends Authenticatable
             ->withPivot('role')
             ->withTimestamps();
     }
+
+    /**
+     * Chat conversations initiated by this user.
+     */
+    public function conversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class);
+    }
 }

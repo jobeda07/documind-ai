@@ -120,10 +120,12 @@ class WorkspaceController extends Controller
             ->take(5)
             ->get(['id', 'uuid', 'title', 'original_filename', 'mime_type', 'file_size', 'status', 'created_at']);
 
+        $totalChats = $workspace->conversations()->count();
+
         return $this->success([
             'total_documents' => $totalDocs,
             'processed_documents' => $processedDocs,
-            'total_chats' => 0,
+            'total_chats' => $totalChats,
             'storage_used_bytes' => $storageBytes,
             'storage_used_mb' => $storageMb,
             'recent_documents' => $recentDocs,

@@ -44,4 +44,12 @@ class Workspace extends Model
     {
         return $this->hasMany(Document::class);
     }
+
+    /**
+     * Conversations belonging to this workspace.
+     */
+    public function conversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class);
+    }
 }
