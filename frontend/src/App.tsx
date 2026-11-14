@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Sidebar } from './components/Sidebar';
 import { TopNavbar } from './components/TopNavbar';
@@ -11,11 +11,61 @@ import type { NavItemKey } from './types/dashboard';
 import { Database, Cpu, ShieldCheck } from 'lucide-react';
 import './App.css';
 
+const validTabs: NavItemKey[] = ['dashboard', 'documents', 'chat', 'workspaces', 'settings', 'profile'];
+
+const getInitialTab = (): NavItemKey => {
+  // 1. Read from URL Hash (e.g. #/chat, #/documents)
+  if (typeof window !== 'undefined' && window.location.hash) {
+    const raw = window.location.hash.replace(/^#\/?/, '').toLowerCase() as NavItemKey;
+    if (validTabs.includes(raw)) {
+      return raw;
+    }
+  }
+
+  // 2. Fallback to localStorage
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('documind_active_tab') as NavItemKey;
+    if (validTabs.includes(saved)) {
+      return saved;
+    }
+  }
+
+  return 'dashboard';
+};
+
 function MainApp() {
   const { user, token, activeWorkspace } = useAuth();
-  const [currentTab, setCurrentTab] = useState<NavItemKey>('dashboard');
+  const [currentTab, setCurrentTabState] = useState<NavItemKey>(getInitialTab);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  const setCurrentTab = useCallback((tab: NavItemKey) => {
+    setCurrentTabState(tab);
+    localStorage.setItem('documind_active_tab', tab);
+    if (window.location.hash !== `#/${tab}`) {
+      window.location.hash = `/${tab}`;
+    }
+  }, []);
+
+  // Listen to browser Back/Forward or manual URL hash changes
+  useEffect(() => {
+    const onHashChange = () => {
+      const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase() as NavItemKey;
+      if (validTabs.includes(hash)) {
+        setCurrentTabState(hash);
+        localStorage.setItem('documind_active_tab', hash);
+      }
+    };
+
+    window.addEventListener('hashchange', onHashChange);
+
+    // Ensure the URL hash reflects the initial tab
+    if (!window.location.hash || window.location.hash === '#' || window.location.hash === '#/') {
+      window.location.hash = `/${currentTab}`;
+    }
+
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, [currentTab]);
 
   return (
     <div className="flex min-h-screen bg-[#f4f6fd] text-slate-800">
