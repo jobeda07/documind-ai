@@ -10,6 +10,7 @@ import {
   Sparkles,
   X,
   Users,
+  Cpu,
 } from 'lucide-react';
 import type { NavItemKey } from '../types/dashboard';
 import { useAuth } from '../context/AuthContext';
@@ -34,7 +35,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { key: 'documents', label: 'Documents', icon: FileText },
     { key: 'chat', label: 'Chat', icon: MessageSquare },
     { key: 'workspaces', label: 'Workspaces', icon: LayoutGrid },
-    ...(user?.role === 'admin' ? [{ key: 'users' as NavItemKey, label: 'User Approval', icon: Users }] : []),
+    ...(user?.role === 'admin'
+      ? [
+          { key: 'users' as NavItemKey, label: 'User Approval', icon: Users },
+          { key: 'ai-settings' as NavItemKey, label: 'AI & API Keys', icon: Cpu },
+        ]
+      : []),
     { key: 'settings', label: 'Settings', icon: Settings },
     { key: 'profile', label: 'Profile', icon: User },
     { key: 'logout', label: 'Logout', icon: LogOut },

@@ -32,6 +32,7 @@ export type NavItemKey =
   | 'chat'
   | 'workspaces'
   | 'users'
+  | 'ai-settings'
   | 'settings'
   | 'profile'
   | 'logout';

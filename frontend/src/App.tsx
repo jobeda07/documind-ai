@@ -9,11 +9,12 @@ import { WorkspacesView } from './pages/WorkspacesView';
 import { ChatView } from './pages/ChatView';
 import { LoginView } from './pages/LoginView';
 import { AdminUsersView } from './pages/AdminUsersView';
+import { AdminAiSettingsView } from './pages/AdminAiSettingsView';
 import type { NavItemKey } from './types/dashboard';
 import { Database, Cpu, ShieldCheck, Loader2 } from 'lucide-react';
 import './App.css';
 
-const validTabs: NavItemKey[] = ['dashboard', 'documents', 'chat', 'workspaces', 'users', 'settings', 'profile'];
+const validTabs: NavItemKey[] = ['dashboard', 'documents', 'chat', 'workspaces', 'users', 'ai-settings', 'settings', 'profile'];
 
 const getInitialTab = (): NavItemKey => {
   if (typeof window !== 'undefined') {
@@ -121,6 +122,7 @@ function MainApp() {
             {currentTab === 'workspaces' && <WorkspacesView />}
             {currentTab === 'chat' && <ChatView />}
             {currentTab === 'users' && <AdminUsersView />}
+            {currentTab === 'ai-settings' && <AdminAiSettingsView />}
 
             {/* Settings Tab */}
             {currentTab === 'settings' && (

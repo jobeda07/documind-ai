@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\AdminAiSettingsController;
 use App\Http\Controllers\Api\V1\Admin\AdminUserController;
 use App\Http\Controllers\Api\V1\AnalyticsController;
 use App\Http\Controllers\Api\V1\AuthController;
@@ -23,11 +24,15 @@ Route::prefix('v1')->group(function () {
             Route::get('me', [AuthController::class, 'me']);
         });
 
-        // Administrator User Management
+        // Administrator User Management & AI Provider Settings
         Route::middleware('user.admin')->prefix('admin')->group(function () {
             Route::get('users', [AdminUserController::class, 'index']);
             Route::patch('users/{user}/status', [AdminUserController::class, 'updateStatus']);
             Route::patch('users/{user}/role', [AdminUserController::class, 'updateRole']);
+
+            Route::get('ai-settings', [AdminAiSettingsController::class, 'index']);
+            Route::put('ai-settings', [AdminAiSettingsController::class, 'update']);
+            Route::post('ai-settings/test-connection', [AdminAiSettingsController::class, 'testConnection']);
         });
 
         Route::apiResource('workspaces', WorkspaceController::class);
