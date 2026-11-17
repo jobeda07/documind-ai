@@ -20,51 +20,6 @@ The platform allows organizations to ingest massive technical, legal, and operat
 
 ---
 
-## 🏗️ Architecture Overview
-
-```mermaid
-flowchart TD
-    subgraph Client["Frontend Client (React 19 + TypeScript)"]
-        UI["Modern SPA Dashboard<br/>(Clean HTML5 /dashboard, /chat, /documents)"]
-        Nav["Global Search (Ctrl + K)<br/>Workspace Switcher & Quick Admin Login"]
-    end
-
-    subgraph Backend["API Layer (Laravel 12 / PHP 8.4)"]
-        Auth["Sanctum Auth + Active Status Middleware<br/>(Admin Approval Gateway)"]
-        DocCtrl["Document Processing Pipeline"]
-        ChatCtrl["RAG Conversation Engine"]
-        AdminCtrl["AI Provider & User Approval Controls"]
-    end
-
-    subgraph StorageEngine["Data & Vector Infrastructure"]
-        PG[("PostgreSQL 18 Database<br/>- Users & Workspaces<br/>- Documents & Metadata")]
-        PGV[("pgvector 0.8.7<br/>- document_chunks table<br/>- vector(384) column<br/>- HNSW Cosine Index (<=>)")]
-        Disk[("Private Storage Disk<br/>(documents/{workspace_id}/{uuid}.ext)")]
-    end
-
-    subgraph AIEngine["Decoupled AI Engine (AiManager)"]
-        Ollama["Local Ollama<br/>(qwen2.5:1.5b + all-minilm)"]
-        OpenAI["OpenAI Cloud<br/>(GPT-4o-mini + text-embedding-3-small)"]
-        Gemini["Google Gemini<br/>(Gemini 1.5 Flash + text-embedding-004)"]
-        Claude["Anthropic Claude<br/>(Claude 3.5 Haiku / Sonnet)"]
-    end
-
-    UI -->|REST API with Bearer Token| Auth
-    Auth --> DocCtrl
-    Auth --> ChatCtrl
-    Auth --> AdminCtrl
-
-    DocCtrl -->|Async Queue Dispatch| Disk
-    DocCtrl -->|Chunking & Embedding| AIEngine
-    AIEngine -->|Dense 384d Vectors| PGV
-
-    ChatCtrl -->|Vector Similarity Query (<=>)| PGV
-    ChatCtrl -->|Assemble Context Prompt| AIEngine
-    AIEngine -->|Grounded Answer with Citations| ChatCtrl
-```
-
----
-
 ## 🏢 Workspace Concept & Multi-Tenancy
 
 In DocuMind AI, **Workspaces** are the core boundary of multi-tenancy and data isolation.
